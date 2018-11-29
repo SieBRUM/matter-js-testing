@@ -1,12 +1,19 @@
 // Constants
-var SCREEN_WIDTH = 1500;
-var SCREEN_HEIGHT = 900;
+var SCREEN_WIDTH = Math.max(document.documentElement.clientWidth, window.innerWidth || 0);
+var SCREEN_HEIGHT = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
 
-var BLOCK_LENGTH = 1;
+
+// Define block data
+var BLOCK_WIDTH = 5;
+var BLOCK_HEIGHT = 600;
 var MAX_HEIGHT_DIFF = 150;
 var X_POS_DIFF = 500;
-var TILE_WIDTH = 1;
-var AMOUNT_RANDOM_POINTS = 10;
+var AMOUNT_RANDOM_POINTS = 40;
+
+var SPRITE_SCALE_Y = 0.22;
+var SPRITE_SCALE_X = 2;
+var START_LOC = 100;
+
 
 // Global variables
 var Game = Game || {};
@@ -37,14 +44,16 @@ Game.init = function () {
         options: {
             width: SCREEN_WIDTH,
             height: SCREEN_HEIGHT,
-            showAngleIndicator: true,
-            showCollisions: true,
-            hasBounds: true
+            showAngleIndicator: false,
+            showCollisions: false,
+            hasBounds: true,
+            wireframes: false
         }
     });
 
     Render.run(render);
 
+    render.options.background = 'transparent';
     // create runner
     runner = Runner.create();
     Runner.run(runner, engine);
@@ -53,61 +62,70 @@ Game.init = function () {
     Game.buildSurface();
 
     var scale = 0.8;
-    playerCar = Composites.car(0, 300, 150 * scale, 30 * scale, 30 * scale);
+    playerCar = Composites.car(0, START_LOC, 150 * scale, 30 * scale, 30 * scale);
     World.add(world, playerCar);
 
     Game.createEvents();
     // keep the mouse in sync with rendering
     render.mouse = mouse;
-
-    // fit the render viewport to the scene
-    Render.lookAt(render, {
-        min: {
-            x: 0,
-            y: 450
-        },
-        max: {
-            x: SCREEN_WIDTH,
-            y: SCREEN_HEIGHT
-        }
-    });
-
-
 }
 
 Game.buildSurface = function () {
     for (var i = 0; i < AMOUNT_RANDOM_POINTS; i++) {
         if (i == 0) {
-            World.add(world, [
-                Bodies.rectangle(0, 400, 100, 50, {
-                    isStatic: true
-                })
-            ]);
-
+            World.add(world, Bodies.rectangle(-100, START_LOC + 100, BLOCK_WIDTH, BLOCK_HEIGHT, {
+                isStatic: true,
+                render: {
+                    background: "#FFFFFF"
+                }
+            }));
         } else {
             var randomNumber = ((Math.random() - 0.5) * 2) * MAX_HEIGHT_DIFF;
-
-            var randomLoc = Bodies.rectangle(world.bodies[world.bodies.length - 1].position.x + X_POS_DIFF, world.bodies[world.bodies.length - 1].position.y + randomNumber, BLOCK_LENGTH, TILE_WIDTH, {
+            var randomLoc = Bodies.rectangle(world.bodies[world.bodies.length - 1].position.x + X_POS_DIFF, world.bodies[world.bodies.length - 1].position.y + randomNumber, BLOCK_WIDTH, BLOCK_HEIGHT, {
                 isStatic: true
             });
 
             var diffY = world.bodies[i - 1].position.y - randomLoc.position.y;
+            var lastLoc = 0;
 
-            for (var a = 0; a < X_POS_DIFF / BLOCK_LENGTH; a++) {
-                var loc = Math.floor(a + ((i - 1) * X_POS_DIFF / BLOCK_LENGTH));
+            for (var a = 0; a < X_POS_DIFF / BLOCK_WIDTH; a++) {
+                var loc = Math.round(a + ((i - 1) * X_POS_DIFF / BLOCK_WIDTH));
+                var tile;
 
-                var tile = Bodies.rectangle(world.bodies[loc].position.x + BLOCK_LENGTH, world.bodies[loc].position.y + (diffY / (X_POS_DIFF / BLOCK_LENGTH)), BLOCK_LENGTH, TILE_WIDTH, {
-                    isStatic: true
-                });
+                // Make sure to not add duplicates (issue with framework)
+                if (lastLoc == world.bodies[loc].position.x + BLOCK_WIDTH) {
+                    continue;
+                }
 
+                lastLoc = world.bodies[loc].position.x + BLOCK_WIDTH;
+
+                if (world.bodies.length == 1) {
+                    tile = Bodies.rectangle(world.bodies[loc].position.x + BLOCK_WIDTH, world.bodies[loc].position.y + ((diffY / (X_POS_DIFF / BLOCK_WIDTH))) + (BLOCK_HEIGHT / 2), BLOCK_WIDTH, BLOCK_HEIGHT, {
+                        isStatic: true,
+                        render: {
+                            sprite: {
+                                texture: 'images/paint_grass.png',
+                                xScale: SPRITE_SCALE_X,
+                                yScale: SPRITE_SCALE_Y
+                            }
+                        }
+                    });
+                } else {
+                    tile = Bodies.rectangle(world.bodies[loc].position.x + BLOCK_WIDTH, world.bodies[loc].position.y + ((diffY / (X_POS_DIFF / BLOCK_WIDTH))), BLOCK_WIDTH, BLOCK_HEIGHT, {
+                        isStatic: true,
+                        render: {
+                            sprite: {
+                                texture: 'images/paint_grass.png',
+                                xScale: SPRITE_SCALE_X,
+                                yScale: SPRITE_SCALE_Y
+                            }
+                        }
+                    });
+                }
                 World.add(world, [tile]);
-                console.log(World);
             }
         }
     }
-
-    console.log(world.bodies[5]);
-    console.log(world.bodies[world.bodies.length - 1]);
 }
 
 Game.createEvents = function () {
@@ -140,17 +158,17 @@ Game.createEvents = function () {
         }
 
         if (event.code == 'KeyW') {
-            Body.applyForce(playerCar.bodies[1], {
-                x: playerCar.bodies[1].position.x,
-                y: playerCar.bodies[1].position.y
+            Body.applyForce(playerCar.bodies[0], {
+                x: playerCar.bodies[0].position.x,
+                y: playerCar.bodies[0].position.y
             }, {
                 x: 0.05,
                 y: 0
             });
         } else if (event.code == 'KeyS') {
-            Body.applyForce(playerCar.bodies[1], {
-                x: playerCar.bodies[1].position.x,
-                y: playerCar.bodies[1].position.y
+            Body.applyForce(playerCar.bodies[0], {
+                x: playerCar.bodies[0].position.x,
+                y: playerCar.bodies[0].position.y
             }, {
                 x: -0.05,
                 y: 0
