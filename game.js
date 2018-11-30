@@ -27,16 +27,17 @@ var Engine = Matter.Engine,
     World = Matter.World,
     Bodies = Matter.Bodies,
     Body = Matter.Body,
+    Composite = Matter.Composite,
     Bounds = Matter.Bounds,
     Events = Matter.Events;
 
-var engine, world, render, runner, playerCar, mouse;
+var engine, world, render, runner, playerCar, mouse, player;
 
 Game.init = function () {
     // create engine
     engine = Engine.create();
     world = engine.world;
-
+    world.gravity.scale = 0.0005;
     // create renderer
     render = Render.create({
         element: document.body,
@@ -63,7 +64,12 @@ Game.init = function () {
 
     var scale = 0.8;
     playerCar = Composites.car(0, START_LOC, 150 * scale, 30 * scale, 30 * scale);
+    player = Bodies.rectangle(0, START_LOC, 20, 20, {
+        inertia: 'Infinity'
+    });
+
     World.add(world, playerCar);
+    World.add(world, player);
 
     Game.createEvents();
     // keep the mouse in sync with rendering
@@ -146,17 +152,26 @@ Game.createEvents = function () {
             x: playerCar.bodies[1].position.x - window.innerWidth / 4,
             y: playerCar.bodies[1].position.y - window.innerHeight / 2
         });
+
+        var loc = Object.create(playerCar.bodies[0].position);
+        loc.x = loc.x;
+        Body.setPosition(player, loc);
+
+    });
+
+    Events.on(engine, 'collisionStart', function (event) {
+        var pairs = event.pairs;
+        console.log(pairs);
+
+        // // change object colours to show those starting a collision
+        // for (var i = 0; i < pairs.length; i++) {
+        //     var pair = pairs[i];
+        //     pair.bodyA.render.fillStyle = '#333';
+        //     pair.bodyB.render.fillStyle = '#333';
+        // }
     });
 
     document.addEventListener('keydown', function (event) {
-        if (!playerCar.bodies[2])
-            return;
-
-        var collision = Matter.SAT.collides(playerCar.bodies[2], world.bodies[0]);
-        if (collision.collided) {
-            console.log("Colliding with ground!"); // Add force to other bodies
-        }
-
         if (event.code == 'KeyW') {
             Body.applyForce(playerCar.bodies[0], {
                 x: playerCar.bodies[0].position.x,
@@ -177,6 +192,16 @@ Game.createEvents = function () {
     });
 
     World.add(world, mouseConstraint);
+}
+
+Game.Drive = function (value) {
+    Body.applyForce(playerCar.bodies[0], {
+        x: playerCar.bodies[0].position.x,
+        y: playerCar.bodies[0].position.y
+    }, {
+        x: value * 0.00005,
+        y: 0
+    });
 }
 
 Game.init();
