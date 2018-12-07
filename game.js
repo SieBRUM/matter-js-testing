@@ -7,8 +7,8 @@ var SCREEN_HEIGHT = Math.max(document.documentElement.clientHeight, window.inner
 var BLOCK_WIDTH = 5;
 var BLOCK_HEIGHT = 600;
 var MAX_HEIGHT_DIFF = 150;
-var X_POS_DIFF = 500;
-var AMOUNT_RANDOM_POINTS = 40;
+var X_POS_DIFF = 400;
+var AMOUNT_RANDOM_POINTS = 5;
 
 var SPRITE_SCALE_Y = 0.22;
 var SPRITE_SCALE_X = 2;
@@ -172,6 +172,15 @@ Game.buildSurface = function () {
             }
         }
     }
+
+    var last = world.bodies.length - 1;
+    // finish
+    World.add(world, [Bodies.rectangle(world.bodies[last].position.x + BLOCK_WIDTH, world.bodies[last].position.y + ((diffY / (X_POS_DIFF / BLOCK_WIDTH))) - 200, BLOCK_WIDTH * 2, BLOCK_HEIGHT, {
+        isStatic: true,
+        collisionFilter: {
+            group: 4
+        }
+    })]);
 }
 
 Game.createEvents = function () {
@@ -190,14 +199,14 @@ Game.createEvents = function () {
     Events.on(engine, 'beforeUpdate', function () {
         Bounds.shift(render.bounds, {
             x: playerCar.bodies[1].position.x - window.innerWidth / 4,
-            y: playerCar.bodies[1].position.y - window.innerHeight / 2
+            y: (playerCar.bodies[1].position.y - window.innerHeight / 2) - 150
         });
     });
 
     Events.on(engine, 'afterUpdate', function () {
         Bounds.shift(render.bounds, {
             x: playerCar.bodies[1].position.x - window.innerWidth / 4,
-            y: playerCar.bodies[1].position.y - window.innerHeight / 2
+            y: (playerCar.bodies[1].position.y - window.innerHeight / 2) - 150
         });
 
         player.angle = playerCar.bodies[0].angle;
