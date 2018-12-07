@@ -142,6 +142,9 @@ Game.buildSurface = function () {
                 if (world.bodies.length == 1) {
                     tile = Bodies.rectangle(world.bodies[loc].position.x + BLOCK_WIDTH, world.bodies[loc].position.y + ((diffY / (X_POS_DIFF / BLOCK_WIDTH))) + (BLOCK_HEIGHT / 2), BLOCK_WIDTH, BLOCK_HEIGHT, {
                         isStatic: true,
+                        collisionFilter: {
+                            group: 4
+                        },
                         render: {
                             sprite: {
                                 texture: 'images/paint_grass.png',
@@ -153,6 +156,9 @@ Game.buildSurface = function () {
                 } else {
                     tile = Bodies.rectangle(world.bodies[loc].position.x + BLOCK_WIDTH, world.bodies[loc].position.y + ((diffY / (X_POS_DIFF / BLOCK_WIDTH))), BLOCK_WIDTH, BLOCK_HEIGHT, {
                         isStatic: true,
+                        collisionFilter: {
+                            group: 4
+                        },
                         render: {
                             sprite: {
                                 texture: 'images/paint_grass.png',
