@@ -64,9 +64,43 @@ Game.init = function () {
 
     var scale = 0.8;
     playerCar = Composites.car(0, START_LOC, 150 * scale, 30 * scale, 30 * scale);
+    playerCar.bodies[0].render.sprite = {
+        texture: 'images/auto.png',
+        xScale: 0.3,
+        yScale: 0.2,
+        xOffset: 0.5,
+        yOffset: 0.5,
+    };
+    playerCar.bodies[1].render.visible = false;
+    playerCar.bodies[2].render.visible = false;
     player = Bodies.rectangle(0, START_LOC, 20, 20, {
-        inertia: 'Infinity'
+        collisionFilter: playerCar.bodies[0].collisionFilter,
+        render: {
+            sprite: {
+
+                texture: 'images/head.png',
+                yOffset: 0.19,
+                xScale: 0.25,
+                yScale: 0.25
+            }
+        },
+        label: "player head"
     });
+
+    console.log(player);
+
+    var axelB = Matter.Constraint.create({
+        bodyB: playerCar.bodies[0],
+        pointB: {
+            x: 0,
+            y: -20
+        },
+        bodyA: player,
+        stiffness: 1,
+        length: 1
+    });
+
+    Matter.Composite.addConstraint(playerCar, axelB);
 
     World.add(world, playerCar);
     World.add(world, player);
@@ -152,23 +186,25 @@ Game.createEvents = function () {
             x: playerCar.bodies[1].position.x - window.innerWidth / 4,
             y: playerCar.bodies[1].position.y - window.innerHeight / 2
         });
+    });
 
-        var loc = Object.create(playerCar.bodies[0].position);
-        loc.x = loc.x;
-        Body.setPosition(player, loc);
+    Events.on(engine, 'afterUpdate', function () {
+        Bounds.shift(render.bounds, {
+            x: playerCar.bodies[1].position.x - window.innerWidth / 4,
+            y: playerCar.bodies[1].position.y - window.innerHeight / 2
+        });
 
+        player.angle = playerCar.bodies[0].angle;
     });
 
     Events.on(engine, 'collisionStart', function (event) {
         var pairs = event.pairs;
-        console.log(pairs);
-
-        // // change object colours to show those starting a collision
-        // for (var i = 0; i < pairs.length; i++) {
-        //     var pair = pairs[i];
-        //     pair.bodyA.render.fillStyle = '#333';
-        //     pair.bodyB.render.fillStyle = '#333';
-        // }
+        for (var i = 0; i < pairs.length; i++) {
+            var pair = pairs[i];
+            if (pair.bodyA.label == "player head" || pair.bodyB.label == "player head") {
+                Game.GameOver();
+            }
+        }
     });
 
     document.addEventListener('keydown', function (event) {
@@ -202,6 +238,22 @@ Game.Drive = function (value) {
         x: value * 0.00005,
         y: 0
     });
+}
+
+Game.GameOver = function () {
+    Matter.World.clear(engine.world);
+    Matter.Engine.clear(engine);
+    render.canvas.remove();
+    render.canvas = null;
+    render.context = null;
+    render.textures = {};
+    engine = null;
+    world = null;
+    render = null;
+    runner = null;
+    playerCar = null;
+    mouse = null;
+    player = null;
 }
 
 Game.init();
