@@ -4,16 +4,18 @@ var SCREEN_HEIGHT = Math.max(document.documentElement.clientHeight, window.inner
 
 
 // Define block data
-var BLOCK_WIDTH = 5;
+var BLOCK_WIDTH = 3;
 var BLOCK_HEIGHT = 600;
-var MAX_HEIGHT_DIFF = 150;
+var MAX_HEIGHT_DIFF = 170;
 var X_POS_DIFF = 400;
-var AMOUNT_RANDOM_POINTS = 5;
+var AMOUNT_RANDOM_POINTS = 40;
 
 var SPRITE_SCALE_Y = 0.22;
 var SPRITE_SCALE_X = 2;
 var START_LOC = 100;
+var MAX_VEHICLE_SPEED = 15;
 
+var isDriving = false;
 
 // Global variables
 var Game = Game || {};
@@ -31,13 +33,13 @@ var Engine = Matter.Engine,
     Bounds = Matter.Bounds,
     Events = Matter.Events;
 
-var engine, world, render, runner, playerCar, mouse, player;
+var engine, world, render, runner, playerCar, mouse, player, finishLine;
 
 Game.init = function () {
     // create engine
     engine = Engine.create();
     world = engine.world;
-    world.gravity.scale = 0.0005;
+    world.gravity.scale = 0.0008;
     // create renderer
     render = Render.create({
         element: document.body,
@@ -87,8 +89,6 @@ Game.init = function () {
         label: "player head"
     });
 
-    console.log(player);
-
     var axelB = Matter.Constraint.create({
         bodyB: playerCar.bodies[0],
         pointB: {
@@ -108,6 +108,12 @@ Game.init = function () {
     Game.createEvents();
     // keep the mouse in sync with rendering
     render.mouse = mouse;
+    setTimeout(function () {
+        document.getElementById('song').volume = 0.9;
+        document.getElementById('song').play();
+        document.getElementById('carStart').play();
+
+    }, 150);
 }
 
 Game.buildSurface = function () {
@@ -175,8 +181,9 @@ Game.buildSurface = function () {
 
     var last = world.bodies.length - 1;
     // finish
-    World.add(world, [Bodies.rectangle(world.bodies[last].position.x + BLOCK_WIDTH, world.bodies[last].position.y + ((diffY / (X_POS_DIFF / BLOCK_WIDTH))) - 200, BLOCK_WIDTH * 2, BLOCK_HEIGHT, {
+    finishLine = World.add(world, [Bodies.rectangle(world.bodies[last].position.x + BLOCK_WIDTH, world.bodies[last].position.y + ((diffY / (X_POS_DIFF / BLOCK_WIDTH))) - 200, BLOCK_WIDTH * 2, BLOCK_HEIGHT, {
         isStatic: true,
+        label: 'finishline',
         collisionFilter: {
             group: 4
         }
@@ -198,18 +205,29 @@ Game.createEvents = function () {
 
     Events.on(engine, 'beforeUpdate', function () {
         Bounds.shift(render.bounds, {
-            x: playerCar.bodies[1].position.x - window.innerWidth / 4,
+            x: (playerCar.bodies[1].position.x - window.innerWidth / 4),
             y: (playerCar.bodies[1].position.y - window.innerHeight / 2) - 150
         });
     });
 
     Events.on(engine, 'afterUpdate', function () {
         Bounds.shift(render.bounds, {
-            x: playerCar.bodies[1].position.x - window.innerWidth / 4,
+            x: (playerCar.bodies[1].position.x - window.innerWidth / 4),
             y: (playerCar.bodies[1].position.y - window.innerHeight / 2) - 150
         });
 
         player.angle = playerCar.bodies[0].angle;
+        if (!carIdle) return;
+
+        if (!document.getElementById('carStart').paused) return;
+        if (isDriving) {
+            document.getElementById('carIdle').pause();
+            document.getElementById('soundDriving').play();
+        } else {
+            document.getElementById('soundDriving').pause();
+            document.getElementById('carIdle').play();
+
+        }
     });
 
     Events.on(engine, 'collisionStart', function (event) {
@@ -217,13 +235,20 @@ Game.createEvents = function () {
         for (var i = 0; i < pairs.length; i++) {
             var pair = pairs[i];
             if (pair.bodyA.label == "player head" || pair.bodyB.label == "player head") {
-                Game.GameOver();
+                Game.GameOver(true);
+            }
+
+            if (pair.bodyA.label == 'finishline' || pair.bodyB.label == 'finishline') {
+                alert("YAAAY FINISH!");
+                Game.GameOver(false)
             }
         }
     });
 
     document.addEventListener('keydown', function (event) {
+        if (playerCar.bodies[0].speed > MAX_VEHICLE_SPEED) return;
         if (event.code == 'KeyW') {
+            isDriving = true;
             Body.applyForce(playerCar.bodies[0], {
                 x: playerCar.bodies[0].position.x,
                 y: playerCar.bodies[0].position.y
@@ -239,6 +264,26 @@ Game.createEvents = function () {
                 x: -0.05,
                 y: 0
             });
+            isDriving = true;
+        } // else if (event.code == 'KeyA') {
+        //     Body.applyForce(playerCar.bodies[0], playerCar.bodies[0].axes[3], {
+        //         x: 0,
+        //         y: -0.02
+        //     });
+        // } else if (event.code == 'KeyD') {
+        //     Body.applyForce(playerCar.bodies[0], playerCar.bodies[0].axes[3], {
+        //         x: 0,
+        //         y: 0.02
+        //     });
+        // }
+    });
+
+    document.addEventListener('keyup', function (event) {
+        if (event.code == 'KeyW') {
+            isDriving = false;
+
+        } else if (event.code == 'KeyS') {
+            isDriving = false;
         }
     });
 
@@ -255,20 +300,20 @@ Game.Drive = function (value) {
     });
 }
 
-Game.GameOver = function () {
-    Matter.World.clear(engine.world);
-    Matter.Engine.clear(engine);
-    render.canvas.remove();
-    render.canvas = null;
-    render.context = null;
-    render.textures = {};
-    engine = null;
-    world = null;
-    render = null;
-    runner = null;
-    playerCar = null;
-    mouse = null;
-    player = null;
+Game.GameOver = function (isGameOver) {
+    if (isGameOver) {
+        alert("Uh oh, u died! Try again?");
+    }
+    document.getElementById('carIdle').pause();
+    document.getElementById('soundDriving').pause();
+    document.getElementById('carStart').pause();
+    document.getElementById('song').pause();
+    World.clear(engine.world);
+    Engine.clear(engine);
+    document.getelement
+    engine, world, render, runner, playerCar, mouse, player = null;
+    document.getElementsByTagName('canvas')[0].remove();
+    Game.init();
 }
 
 Game.init();
