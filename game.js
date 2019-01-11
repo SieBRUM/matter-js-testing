@@ -67,7 +67,7 @@ Game.init = function () {
     var scale = 0.8;
     playerCar = Composites.car(0, START_LOC, 150 * scale, 30 * scale, 30 * scale);
     playerCar.bodies[0].render.sprite = {
-        texture: 'images/auto.png',
+        texture: 'assets/auto_cool.png',
         xScale: 0.3,
         yScale: 0.2,
         xOffset: 0.5,
@@ -80,7 +80,7 @@ Game.init = function () {
         render: {
             sprite: {
 
-                texture: 'images/head.png',
+                texture: 'assets/head.png',
                 yOffset: 0.19,
                 xScale: 0.25,
                 yScale: 0.25
@@ -153,7 +153,7 @@ Game.buildSurface = function () {
                         },
                         render: {
                             sprite: {
-                                texture: 'images/paint_grass.png',
+                                texture: 'assets/paint_hell.png',
                                 xScale: SPRITE_SCALE_X,
                                 yScale: SPRITE_SCALE_Y
                             }
@@ -167,7 +167,7 @@ Game.buildSurface = function () {
                         },
                         render: {
                             sprite: {
-                                texture: 'images/paint_grass.png',
+                                texture: 'assets/paint_hell.png',
                                 xScale: SPRITE_SCALE_X,
                                 yScale: SPRITE_SCALE_Y
                             }
